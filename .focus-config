@@ -1,0 +1,44 @@
+[13]  # Version number. Do not delete.
+
+[[workspace]]
+# These directories and files will be scanned when a workspace is opened so that search etc. works.
+./
+
+[ignore]
+# Files and directories matching the following wildcards will not be loaded or descended into
+# Example:
+# *.js - will ignore all files with a '.js' extension
+# tmp* - will ignore any files or directories which start with 'tmp'
+# C:/project/dirname/** - will ignore everything under `dirname`
+# C:/project/dirname/*  - will ignore all files under `dirname`, but not recursively
+.git
+.angular
+.vscode
+node_modules
+bin
+obj
+
+[[build commands]]
+build_working_dir:        ./
+open_panel_on_build:    true  #  <- any settings specified here will apply to all commands unless overridden
+# close_panel_on_success: false
+
+[Build]   # <- command name. Can be arbitrary
+build_command:          nob.exe
+key_binding:            F5
+#timeout_in_seconds:     25             # if you don't want a timeout, don't specify it
+close_panel_on_success: true
+
+[Run]                   # <- You could have commands that don't build anything and just run something
+run_command:            build/main.exe
+key_binding:            F6
+
+
+[Debug]                   # <- You could have commands that don't build anything and just run something
+run_command:            raddbg --project=game2.raddbg_project
+key_binding:            F10
+
+
+
+
+
