@@ -1,5 +1,6 @@
 #include "libs/raylib.h"
 #include "libs/raymath.h"
+#include <string.h>
 
 #define ROWSIZE 10
 #define ROWCOUNT 20
@@ -291,10 +292,31 @@ void game_step() {
                 level.animBlockMoveDuration = 0.0f;
                 level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_BLOCK);
             }
-            //TODO(rc): check fill lines and remove them
+
+            //check filled lines and remove them
+            for(int y = 0; y < ROWCOUNT; y++) {
+                bool isfilled = true;
+                for(int x = 0; x < ROWSIZE; x++) {
+                    if (level.cells[y][x] == BlockType_NONE) {
+                        isfilled = false;
+                        break;
+                    }
+                }
+                if (isfilled) {
+                    for (int r = y; r > 0; r--) {
+                        for(int c = 0; c < ROWSIZE; c++) {
+                            level.cells[r][c] = level.cells[r-1][c];
+                        }
+                    }
+                    for(int c = 0; c < ROWSIZE; c++) {
+                        level.cells[0][c] = 0;
+                    }
+                }
+            }
+
 
             //check endstate
-            //TODO(rc):  might just check if the blocktype fits, but this is ok for now
+            //NOTE(rc):  might just check if the blocktype fits, but this is ok for now
             for(int x = 0; x < ROWSIZE; x++)  {
                 if (level.cells[0][x] != BlockType_NONE) {
                     level.gameState = GameState_GAMEOVER;
