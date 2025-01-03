@@ -1,7 +1,9 @@
 #include "libs/raylib.h"
+#include "libs/raymath.h"
 
 #define ROWSIZE 10
 #define ROWCOUNT 20
+#define BLOCK_MOVE_ANIM_LENGTH 0.125f
 typedef struct Level Level;
 
 int windowWidth = 900;
@@ -41,16 +43,20 @@ typedef enum GameState {
 struct Level {
     int cells[ROWCOUNT][ROWSIZE];
 
+    Vector2 blockFromPosition;
     Vector2 blockPosition;
     BlockRotation blockRotation;
     BlockType blockType;
     BlockType nextBlockType;
     GameState gameState;
+
     float speed;
     float tickTime;
+    
+    float animBlockMoveDuration;
 };
 
-Level level = {{},{3,1},BlockRotation_LEFT,BlockType_BLOCK, BlockType_LINE, GameState_MENU, 1.f, 0.f};
+Level level = {};
 
 
 void draw_block(BlockType blockType, BlockRotation rotation, Vector2 position) {
@@ -58,17 +64,15 @@ void draw_block(BlockType blockType, BlockRotation rotation, Vector2 position) {
     switch(blockType){
         case BlockType_LINE:{
             if (rotation == BlockRotation_RIGHT || rotation == BlockRotation_LEFT) {
-                int x = position.x;// - 1 < 0 ? 0 : position.x - 1;
-                for(int i = x; i < x + 4; i++){
-                    int cellX = gameLeft + (i*cellWidth);
+                for(int i = 0; i < 4; i++){
+                    int cellX = gameLeft + ((i + position.x)*cellWidth);
                     int cellY = gameTop + position.y*cellWidth;
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY, cellWidth, cellWidth }), YELLOW);
                 }
             } else if (rotation == BlockRotation_UP || rotation == BlockRotation_DOWN) {
-                int y = position.y;// - 1 < 0 ? 0 : position.y - 1;
-                for(int i = y; i < y + 4; i++){
+                for(int i = 0; i < 4; i++){
                     int cellX = gameLeft + position.x*cellWidth;
-                    int cellY = gameTop + (i*cellWidth);
+                    int cellY = gameTop + ((i + position.y)*cellWidth);
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY, cellWidth, cellWidth }), YELLOW);
                 }
             } else {
@@ -135,7 +139,6 @@ bool current_block_hit(BlockType blockType, BlockRotation rotation, Vector2 posi
             if (y >= maxY) y = maxY;
 
             int x = (int)position.x;
-            TraceLog(LOG_INFO, "x %i y %i maxy %i", x, y, maxY);
             if ((rotation == BlockRotation_UP || rotation == BlockRotation_DOWN)
                 &&  (level.cells[y+3][x] != BlockType_NONE || y == maxY)) {
                     level.cells[y-1][x] = blockType;
@@ -195,9 +198,11 @@ void game_step() {
                     }
                 }
                 level.gameState = GameState_GAME;
+                level.tickTime = gameTime;
                 level.speed = 1.0f;
                 level.blockPosition = (CLITERAL(Vector2){3,1});
-                level.blockType = level.nextBlockType;(BlockType)GetRandomValue(BlockType_NONE+1, BlockType_BLOCK);
+                level.blockFromPosition = (CLITERAL(Vector2){3,1});
+                level.blockType = BlockType_LINE;// (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_BLOCK);
                 level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_BLOCK);
             }
         } break;
@@ -215,13 +220,17 @@ void game_step() {
                 level.blockRotation = (level.blockRotation - 1) < 0 ? BlockRotation_COUNT - 1 : level.blockRotation - 1;
             }
             if (IsKeyPressed(KEY_A) || IsKeyPressedRepeat(KEY_A)) {
+                //TODO check if allowed
                 level.blockPosition.x -= 1;
                 if (level.blockPosition.x < 0) level.blockPosition.x = 0;
+                if (level.animBlockMoveDuration < 0.2f) level.animBlockMoveDuration = 1.0f;
             }
             if (IsKeyPressed(KEY_D) || IsKeyPressedRepeat(KEY_D)) {
+                //TODO check if allowed
                 level.blockPosition.x += 1;
                 int extreme = current_block_max_right(level.blockType, level.blockRotation);
                 if (level.blockPosition.x >= extreme) level.blockPosition.x = extreme - 1;
+                if (level.animBlockMoveDuration < 0.2f) level.animBlockMoveDuration = 1.0f;
             }
             if (IsKeyPressed(KEY_S) || IsKeyPressedRepeat(KEY_S)) {
                 level.tickTime -= level.speed;
@@ -229,14 +238,17 @@ void game_step() {
             if ((level.tickTime + level.speed) < gameTime) {
                 level.tickTime = gameTime;
                 level.blockPosition.y += 1;
+                level.animBlockMoveDuration = 1.0f;
             }
 
             if (current_block_hit(level.blockType, level.blockRotation, level.blockPosition)) {
                 level.blockPosition = (CLITERAL(Vector2){3,1});
+                level.blockFromPosition = level.blockPosition;
                 level.blockType = level.nextBlockType;
+                level.animBlockMoveDuration = 0.0f;
                 level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_BLOCK);
             }
-
+            TraceLog(LOG_INFO, "Anim %f", level.animBlockMoveDuration);
             //TODO(rc): check fill lines and remove them
 
             //check endstate
@@ -290,10 +302,9 @@ void game_draw(){
 
     if (level.gameState == GameState_GAME) {
         //draw currentblock
-        draw_block(level.blockType, level.blockRotation, level.blockPosition);
-
+        draw_block(level.blockType, level.blockRotation, level.blockFromPosition);
         //draw next block
-        draw_block(level.nextBlockType, BlockRotation_UP, (CLITERAL(Vector2){gameLeft + width + width*0.2f, gameTop + width*0.2f }));
+        draw_block(level.nextBlockType, BlockRotation_UP, (CLITERAL(Vector2){14, 7 }));
     }
     else {
         float fontBase = windowWidth / 20.f;
@@ -319,6 +330,11 @@ int main(void) {
     while(!WindowShouldClose()) {
         dt = GetFrameTime();
         gameTime += dt;
+        level.animBlockMoveDuration = (level.animBlockMoveDuration*BLOCK_MOVE_ANIM_LENGTH - dt)/BLOCK_MOVE_ANIM_LENGTH;
+        if (level.animBlockMoveDuration <= 0.f) level.animBlockMoveDuration = 0.f;
+        else {
+            level.blockFromPosition = Vector2Lerp(level.blockFromPosition, level.blockPosition, (1.0f - level.animBlockMoveDuration));
+        }
         windowWidth = GetScreenWidth();
         windowHeight = GetScreenHeight();
 
