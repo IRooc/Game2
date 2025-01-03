@@ -4,7 +4,6 @@
 #define ROWSIZE 10
 #define ROWCOUNT 20
 #define BLOCK_MOVE_ANIM_LENGTH 0.125f
-typedef struct Level Level;
 
 int windowWidth = 900;
 int windowHeight = 600;
@@ -40,6 +39,7 @@ typedef enum GameState {
     GameState_GAMEOVER,
 } GameState;
 
+typedef struct Level Level;
 struct Level {
     int cells[ROWCOUNT][ROWSIZE];
 
@@ -52,7 +52,7 @@ struct Level {
 
     float speed;
     float tickTime;
-    
+
     float animBlockMoveDuration;
 };
 
@@ -128,6 +128,47 @@ int current_block_max_down(BlockType blockType, BlockRotation rotation) {
             return ROWCOUNT;
         } break;
     }
+}
+
+bool is_move_allowed(BlockType blockType, BlockRotation rotation, Vector2 position, Vector2 move) {
+    bool result = true;
+    int x = position.x + move.x;
+    int y = position.y;
+    switch(blockType) {
+        case BlockType_LINE: {
+            if (rotation == BlockRotation_UP || rotation == BlockRotation_DOWN) {
+                if (level.cells[y][x] != BlockType_NONE ||
+                    level.cells[y+1][x] != BlockType_NONE ||
+                    level.cells[y+2][x] != BlockType_NONE ||
+                    level.cells[y+3][x] != BlockType_NONE) {
+                    result = false;
+                }
+
+            } else if (rotation == BlockRotation_LEFT || rotation == BlockRotation_RIGHT) {
+                if (level.cells[y][x] != BlockType_NONE
+                    || (move.x > 0.f && level.cells[y][x+3] != BlockType_NONE)) {
+                    result = false;
+                }
+            }
+        } break;
+        case BlockType_BLOCK: {
+            if (move.x > 0.f) {
+                if (level.cells[y][x+1] != BlockType_NONE ||
+                    level.cells[y+1][x+1] != BlockType_NONE) {
+                    result = false;
+                }
+            }
+            else {
+                if (level.cells[y][x] != BlockType_NONE ||
+                    level.cells[y+1][x] != BlockType_NONE) {
+                    result = false;
+                }
+
+            }
+        } break;
+
+    }
+    return result;
 }
 
 bool current_block_hit(BlockType blockType, BlockRotation rotation, Vector2 position) {
@@ -220,17 +261,19 @@ void game_step() {
                 level.blockRotation = (level.blockRotation - 1) < 0 ? BlockRotation_COUNT - 1 : level.blockRotation - 1;
             }
             if (IsKeyPressed(KEY_A) || IsKeyPressedRepeat(KEY_A)) {
-                //TODO check if allowed
-                level.blockPosition.x -= 1;
-                if (level.blockPosition.x < 0) level.blockPosition.x = 0;
-                if (level.animBlockMoveDuration < 0.2f) level.animBlockMoveDuration = 1.0f;
+                if (is_move_allowed(level.blockType, level.blockRotation, level.blockPosition, (CLITERAL(Vector2){-1, 0}))) {
+                    level.blockPosition.x -= 1;
+                    if (level.blockPosition.x < 0) level.blockPosition.x = 0;
+                    if (level.animBlockMoveDuration < 0.2f) level.animBlockMoveDuration = 1.0f;
+                }
             }
             if (IsKeyPressed(KEY_D) || IsKeyPressedRepeat(KEY_D)) {
-                //TODO check if allowed
-                level.blockPosition.x += 1;
-                int extreme = current_block_max_right(level.blockType, level.blockRotation);
-                if (level.blockPosition.x >= extreme) level.blockPosition.x = extreme - 1;
-                if (level.animBlockMoveDuration < 0.2f) level.animBlockMoveDuration = 1.0f;
+                if (is_move_allowed(level.blockType, level.blockRotation, level.blockPosition, (CLITERAL(Vector2){1, 0}))) {
+                    level.blockPosition.x += 1;
+                    int extreme = current_block_max_right(level.blockType, level.blockRotation);
+                    if (level.blockPosition.x >= extreme) level.blockPosition.x = extreme - 1;
+                    if (level.animBlockMoveDuration < 0.2f) level.animBlockMoveDuration = 1.0f;
+                }
             }
             if (IsKeyPressed(KEY_S) || IsKeyPressedRepeat(KEY_S)) {
                 level.tickTime -= level.speed;
@@ -248,7 +291,6 @@ void game_step() {
                 level.animBlockMoveDuration = 0.0f;
                 level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_BLOCK);
             }
-            TraceLog(LOG_INFO, "Anim %f", level.animBlockMoveDuration);
             //TODO(rc): check fill lines and remove them
 
             //check endstate
