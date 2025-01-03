@@ -341,22 +341,21 @@ void game_draw(){
         }
     }
 
-
     if (level.gameState == GameState_GAME) {
         //draw currentblock
         draw_block(level.blockType, level.blockRotation, level.blockFromPosition);
         //draw next block
+        int cellX = gameLeft + 11.5f*cellWidth;
+        int cellY = gameTop + 6*cellWidth;
+        DrawTextEx(GetFontDefault(), "NEXT BLOCK", (CLITERAL(Vector2){ cellX, cellY}), windowWidth / 60.f, 10.f, RED);
         draw_block(level.nextBlockType, BlockRotation_UP, (CLITERAL(Vector2){14, 7 }));
-    }
-    else {
+    } else {
         float fontBase = windowWidth / 20.f;
         if (level.gameState == GameState_GAMEOVER) {
             DrawTextEx(GetFontDefault(), "GAME OVER", (CLITERAL(Vector2){20, (fontBase * 1.5)}), fontBase, 10.0f, RED);
         }
         DrawTextEx(GetFontDefault(), "Press space to begin", (CLITERAL(Vector2){20, (fontBase * 1.5)*2}), fontBase, 10.0f, WHITE);
     }
-
-
 
     EndDrawing();
 }
