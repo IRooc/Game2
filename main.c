@@ -76,7 +76,7 @@ void draw_block(BlockType blockType, BlockRotation rotation, Vector2 position) {
             }
         } break;
         case BlockType_BLOCK: {
-            int cellX = gameLeft + (position.x*cellWidth);
+            int cellX = gameLeft + position.x*cellWidth;
             int cellY = gameTop + position.y*cellWidth;
             DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth, cellY, cellWidth, cellWidth }), GREEN);
             DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY, cellWidth, cellWidth }), GREEN);
@@ -175,7 +175,7 @@ bool current_block_hit(BlockType blockType, BlockRotation rotation, Vector2 posi
             }
         }
         default: {
-            if (position.y > ROWCOUNT) {
+            if (position.y >= maxY) {
                 result = true;
             }
         }break;
@@ -195,12 +195,22 @@ void game_step() {
                     }
                 }
                 level.gameState = GameState_GAME;
+                level.speed = 1.0f;
                 level.blockPosition = (CLITERAL(Vector2){3,1});
                 level.blockType = level.nextBlockType;(BlockType)GetRandomValue(BlockType_NONE+1, BlockType_BLOCK);
                 level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_BLOCK);
             }
         } break;
         case GameState_GAME: {
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                //Memset should also just work, but not including it yet..
+                for(int y = 0; y < ROWCOUNT; y++) {
+                    for(int x = 0; x < ROWSIZE; x++) {
+                        level.cells[y][x] = BlockType_NONE;
+                    }
+                }
+                level.gameState = GameState_MENU;
+            }
             if (IsKeyPressed(KEY_W)) {
                 level.blockRotation = (level.blockRotation - 1) < 0 ? BlockRotation_COUNT - 1 : level.blockRotation - 1;
             }
@@ -227,6 +237,10 @@ void game_step() {
                 level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_BLOCK);
             }
 
+            //TODO(rc): check fill lines and remove them
+
+            //check endstate
+            //TODO(rc):  might just check if the blocktype fits, but this is ok for now
             for(int x = 0; x < ROWSIZE; x++)  {
                 if (level.cells[0][x] != BlockType_NONE) {
                     level.gameState = GameState_GAMEOVER;
@@ -277,12 +291,16 @@ void game_draw(){
     if (level.gameState == GameState_GAME) {
         //draw currentblock
         draw_block(level.blockType, level.blockRotation, level.blockPosition);
+
+        //draw next block
+        draw_block(level.nextBlockType, BlockRotation_UP, (CLITERAL(Vector2){gameLeft + width + width*0.2f, gameTop + width*0.2f }));
     }
     else {
+        float fontBase = windowWidth / 20.f;
         if (level.gameState == GameState_GAMEOVER) {
-            DrawTextEx(GetFontDefault(), "GAME OVER", (CLITERAL(Vector2){20, 50}), 10, 10.0f, RED);
+            DrawTextEx(GetFontDefault(), "GAME OVER", (CLITERAL(Vector2){20, (fontBase * 1.5)}), fontBase, 10.0f, RED);
         }
-        DrawTextEx(GetFontDefault(), "Press space to begin", (CLITERAL(Vector2){20, 100}), 10, 10.0f, WHITE);
+        DrawTextEx(GetFontDefault(), "Press space to begin", (CLITERAL(Vector2){20, (fontBase * 1.5)*2}), fontBase, 10.0f, WHITE);
     }
 
 
