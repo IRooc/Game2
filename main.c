@@ -149,6 +149,22 @@ void draw_block(BlockType blockType, BlockRotation rotation, Vector2 position) {
                 DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth, cellY + cellWidth + cellWidth, cellWidth, cellWidth }), RED);
             }
         } break;
+        case BlockType_SNAKEB: {
+            int cellX = gameLeft + position.x*cellWidth;
+            int cellY = gameTop + position.y*cellWidth;
+
+            if (rotation == BlockRotation_UP || rotation == BlockRotation_DOWN) {
+                DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY, cellWidth, cellWidth }), BLUE);
+                DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth, cellY, cellWidth, cellWidth }), BLUE);
+                DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth, cellY + cellWidth, cellWidth, cellWidth }), BLUE);
+                DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth + cellWidth, cellY + cellWidth, cellWidth, cellWidth }), BLUE);
+            } else {
+                DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth, cellY, cellWidth, cellWidth }), BLUE);
+                DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth, cellY + cellWidth, cellWidth, cellWidth }), BLUE);
+                DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY + cellWidth, cellWidth, cellWidth }), BLUE);
+                DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY + cellWidth + cellWidth, cellWidth, cellWidth }), BLUE);
+            }
+        } break;
         case BlockType_NONE: {
             //do nothing
         } break;
@@ -175,6 +191,9 @@ int current_block_max_right(BlockType blockType, BlockRotation rotation) {
         case BlockType_SNAKEA: {
             return rotation == BlockRotation_UP || rotation == BlockRotation_DOWN ? ROWSIZE - 2 : ROWSIZE - 1;
         } break;
+        case BlockType_SNAKEB: {
+            return rotation == BlockRotation_UP || rotation == BlockRotation_DOWN ? ROWSIZE - 2 : ROWSIZE - 1;
+        } break;
         default: {
             return ROWSIZE;
         } break;
@@ -197,6 +216,11 @@ int current_block_max_down(BlockType blockType, BlockRotation rotation) {
             return ROWCOUNT - 1;
         } break;
         case BlockType_SNAKEA: {
+            int y = rotation == BlockRotation_UP || rotation == BlockRotation_DOWN ? ROWCOUNT - 1 : ROWCOUNT - 2;
+            if (y >= ROWCOUNT) y = ROWCOUNT;
+            return y;
+        } break;
+        case BlockType_SNAKEB: {
             int y = rotation == BlockRotation_UP || rotation == BlockRotation_DOWN ? ROWCOUNT - 1 : ROWCOUNT - 2;
             if (y >= ROWCOUNT) y = ROWCOUNT;
             return y;
@@ -328,6 +352,38 @@ bool is_move_allowed(BlockType blockType, BlockRotation rotation, Vector2 positi
                     } else {
                         if (level.cells[y][x] != BlockType_NONE ||
                             level.cells[y+1][x] != BlockType_NONE) {
+                            result = false;
+                        }
+                    }
+                } break;
+            }
+        } break;
+        case BlockType_SNAKEB: {
+            switch(rotation) {
+                case BlockRotation_UP:
+                case BlockRotation_DOWN: {
+                    if (move.x > 0.f) {
+                        if (level.cells[y][x+1] != BlockType_NONE ||
+                            level.cells[y+1][x+2] != BlockType_NONE) {
+                            result = false;
+                        }
+                    } else {
+                        if (level.cells[y][x] != BlockType_NONE ||
+                            level.cells[y+1][x+1] != BlockType_NONE) {
+                            result = false;
+                        }
+                    }
+                } break;
+                case BlockRotation_RIGHT:
+                case BlockRotation_LEFT: {
+                    if (move.x > 0.f) {
+                        if (level.cells[y][x+1] != BlockType_NONE ||
+                            level.cells[y+1][x+1] != BlockType_NONE) {
+                            result = false;
+                        }
+                    } else {
+                        if (level.cells[y+1][x] != BlockType_NONE ||
+                            level.cells[y+2][x] != BlockType_NONE) {
                             result = false;
                         }
                     }
@@ -472,6 +528,38 @@ bool current_block_hit(BlockType blockType, BlockRotation rotation, Vector2 posi
                 } break;
             }
         } break;
+        case BlockType_SNAKEB: {
+            int y = position.y;
+            if (y >= maxY) y = maxY;
+            int x = (int)position.x;
+            switch(rotation) {
+                case BlockRotation_UP:
+                case BlockRotation_DOWN: {
+                    if (y == maxY ||
+                        level.cells[y+1][x+1] != BlockType_NONE ||
+                        level.cells[y+1][x+2] != BlockType_NONE ||
+                        level.cells[y][x] != BlockType_NONE) {
+                        level.cells[y-1][x] = blockType;
+                        level.cells[y-1][x+1] = blockType;
+                        level.cells[y][x+1] = blockType;
+                        level.cells[y][x+2] = blockType;
+                        result = true;
+                    }
+                } break;
+                case BlockRotation_RIGHT:
+                case BlockRotation_LEFT: {
+                    if (y == maxY ||
+                        level.cells[y+1][x+1] != BlockType_NONE ||
+                        level.cells[y+2][x] != BlockType_NONE) {
+                        level.cells[y-1][x+1] = blockType;
+                        level.cells[y][x+1] = blockType;
+                        level.cells[y][x] = blockType;
+                        level.cells[y+1][x] = blockType;
+                        result = true;
+                    }
+                } break;
+            }
+        } break;
         default: {
             if (position.y >= maxY) {
                 result = true;
@@ -486,7 +574,7 @@ void next_block() {
     level.blockFromPosition = level.blockPosition;
     level.blockRotation = BlockRotation_UP;
     level.blockType = level.nextBlockType;
-    level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_SNAKEA);
+                level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_SNAKEB);
     level.animBlockMoveDuration = 0.0f;
 }
 
@@ -505,7 +593,7 @@ void game_step() {
                 level.tickTime = gameTime;
                 level.speed = 1.0f;
                 //setup next block so in next_block() 
-                level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_SNAKEA);
+    level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_SNAKEB);
                 next_block();
             }
         } break;
@@ -635,6 +723,9 @@ void game_draw(){
                     } break;
                     case BlockType_SNAKEA: {
                         DrawRectangleRec(cellRect, RED);
+                    } break;
+                    case BlockType_SNAKEB: {
+                        DrawRectangleRec(cellRect, BLUE);
                     } break;
                 }
             }
