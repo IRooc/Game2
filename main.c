@@ -209,9 +209,9 @@ void draw_block(BlockType blockType, BlockRotation rotation, Vector2 position) {
                 } break;
                 case BlockRotation_RIGHT: {
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY, cellWidth, cellWidth }), DARKPURPLE);
-                    DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY + cellWidth, cellWidth, cellWidth }), DARKPURPLE);
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth, cellY, cellWidth, cellWidth }), DARKPURPLE);
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth + cellWidth, cellY, cellWidth, cellWidth }), DARKPURPLE);
+                    DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth + cellWidth, cellY + cellWidth, cellWidth, cellWidth }), DARKPURPLE);
                 } break;
                 case BlockRotation_DOWN: {
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY, cellWidth, cellWidth }), DARKPURPLE);
@@ -220,10 +220,10 @@ void draw_block(BlockType blockType, BlockRotation rotation, Vector2 position) {
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY + cellWidth + cellWidth, cellWidth, cellWidth }), DARKPURPLE);
                 } break;
                 case BlockRotation_LEFT: {
+                    DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY, cellWidth, cellWidth }), DARKPURPLE);
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX, cellY + cellWidth, cellWidth, cellWidth }), DARKPURPLE);
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth, cellY + cellWidth, cellWidth, cellWidth }), DARKPURPLE);
                     DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth + cellWidth, cellY + cellWidth, cellWidth, cellWidth }), DARKPURPLE);
-                    DrawRectangleRec((CLITERAL(Rectangle) { cellX + cellWidth + cellWidth, cellY, cellWidth, cellWidth }), DARKPURPLE);
                 } break;
             }
         } break;
@@ -518,9 +518,9 @@ bool is_move_allowed(BlockType blockType, BlockRotation rotation, Vector2 positi
                 } break;
                 case BlockRotation_RIGHT: {
                     if (level.cells[y][newX] != BlockType_NONE ||
-                        level.cells[y+1][newX] != BlockType_NONE ||
                         level.cells[y][newX+1] != BlockType_NONE ||
-                        level.cells[y][newX+2] != BlockType_NONE) {
+                        level.cells[y][newX+2] != BlockType_NONE ||
+                        level.cells[y+1][newX+2] != BlockType_NONE) {
                         result = false;
                     }
                 } break;
