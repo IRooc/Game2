@@ -71,6 +71,22 @@ struct Level {
 
 Level level = {};
 
+void log_rotation(BlockRotation rotation) {
+    switch(rotation) {
+        case BlockRotation_UP: {
+            TraceLog(LOG_INFO, "UP");
+        } break;
+        case BlockRotation_RIGHT: {
+            TraceLog(LOG_INFO, "RIGHT");
+        } break;
+        case BlockRotation_DOWN: {
+            TraceLog(LOG_INFO, "DOWN");
+        } break;
+        case BlockRotation_LEFT: {
+            TraceLog(LOG_INFO, "LEFT");
+        } break;
+    }
+}
 
 void draw_block(BlockType blockType, BlockRotation rotation, Vector2 position) {
 
@@ -307,6 +323,150 @@ int current_block_max_down(BlockType blockType, BlockRotation rotation) {
             return ROWCOUNT;
         } break;
     }
+}
+
+bool is_cell_empty(int x, int y) {
+    if (x < 0 || x >= ROWSIZE || y < 0 || y >= ROWCOUNT) {
+        return false;
+    }
+    return level.cells[y][x] == BlockType_NONE;
+}
+
+bool can_place_block(BlockType blockType, BlockRotation rotation, Vector2 position) {
+    int x = (int)position.x;
+    int y = (int)position.y;
+    switch(blockType) {
+        case BlockType_LINE: {
+            if (rotation == BlockRotation_RIGHT || rotation == BlockRotation_LEFT) {
+                return is_cell_empty(x, y)
+                    && is_cell_empty(x + 1, y)
+                    && is_cell_empty(x + 2, y)
+                    && is_cell_empty(x + 3, y);
+            }
+            return is_cell_empty(x, y)
+                && is_cell_empty(x, y + 1)
+                && is_cell_empty(x, y + 2)
+                && is_cell_empty(x, y + 3);
+        } break;
+        case BlockType_BLOCK: {
+            return is_cell_empty(x, y)
+                && is_cell_empty(x + 1, y)
+                && is_cell_empty(x, y + 1)
+                && is_cell_empty(x + 1, y + 1);
+        } break;
+        case BlockType_PIRAMID: {
+            switch(rotation) {
+                case BlockRotation_UP: {
+                    return is_cell_empty(x, y)
+                        && is_cell_empty(x + 1, y)
+                        && is_cell_empty(x + 2, y)
+                        && is_cell_empty(x + 1, y + 1);
+                } break;
+                case BlockRotation_RIGHT: {
+                    return is_cell_empty(x + 1, y)
+                        && is_cell_empty(x + 1, y + 1)
+                        && is_cell_empty(x, y + 1)
+                        && is_cell_empty(x + 1, y + 2);
+                } break;
+                case BlockRotation_DOWN: {
+                    return is_cell_empty(x, y + 1)
+                        && is_cell_empty(x + 1, y + 1)
+                        && is_cell_empty(x + 2, y + 1)
+                        && is_cell_empty(x + 1, y);
+                } break;
+                case BlockRotation_LEFT: {
+                    return is_cell_empty(x, y)
+                        && is_cell_empty(x, y + 1)
+                        && is_cell_empty(x + 1, y + 1)
+                        && is_cell_empty(x, y + 2);
+                } break;
+            }
+        } break;
+        case BlockType_SNAKEA: {
+            if (rotation == BlockRotation_UP || rotation == BlockRotation_DOWN) {
+                return is_cell_empty(x + 1, y)
+                    && is_cell_empty(x + 2, y)
+                    && is_cell_empty(x, y + 1)
+                    && is_cell_empty(x + 1, y + 1);
+            }
+            return is_cell_empty(x, y)
+                && is_cell_empty(x, y + 1)
+                && is_cell_empty(x + 1, y + 1)
+                && is_cell_empty(x + 1, y + 2);
+        } break;
+        case BlockType_SNAKEB: {
+            if (rotation == BlockRotation_UP || rotation == BlockRotation_DOWN) {
+                return is_cell_empty(x, y)
+                    && is_cell_empty(x + 1, y)
+                    && is_cell_empty(x + 1, y + 1)
+                    && is_cell_empty(x + 2, y + 1);
+            }
+            return is_cell_empty(x + 1, y)
+                && is_cell_empty(x + 1, y + 1)
+                && is_cell_empty(x, y + 1)
+                && is_cell_empty(x, y + 2);
+        } break;
+        case BlockType_LA: {
+            switch(rotation) {
+                case BlockRotation_UP: {
+                    return is_cell_empty(x, y)
+                        && is_cell_empty(x, y + 1)
+                        && is_cell_empty(x, y + 2)
+                        && is_cell_empty(x + 1, y + 2);
+                } break;
+                case BlockRotation_RIGHT: {
+                    return is_cell_empty(x, y)
+                        && is_cell_empty(x + 1, y)
+                        && is_cell_empty(x + 2, y)
+                        && is_cell_empty(x, y + 1);
+                } break;
+                case BlockRotation_DOWN: {
+                    return is_cell_empty(x, y)
+                        && is_cell_empty(x + 1, y)
+                        && is_cell_empty(x + 1, y + 1)
+                        && is_cell_empty(x + 1, y + 2);
+                } break;
+                case BlockRotation_LEFT: {
+                    return is_cell_empty(x + 2, y + 1)
+                        && is_cell_empty(x, y + 1)
+                        && is_cell_empty(x + 1, y + 1)
+                        && is_cell_empty(x + 2, y);
+                } break;
+            }
+        } break;
+        case BlockType_LB: {
+            switch(rotation) {
+                case BlockRotation_UP: {
+                    return is_cell_empty(x + 1, y)
+                        && is_cell_empty(x + 1, y + 1)
+                        && is_cell_empty(x + 1, y + 2)
+                        && is_cell_empty(x, y + 2);
+                } break;
+                case BlockRotation_RIGHT: {
+                    return is_cell_empty(x, y)
+                        && is_cell_empty(x + 1, y)
+                        && is_cell_empty(x + 2, y)
+                        && is_cell_empty(x + 2, y + 1);
+                } break;
+                case BlockRotation_DOWN: {
+                    return is_cell_empty(x, y)
+                        && is_cell_empty(x + 1, y)
+                        && is_cell_empty(x, y + 1)
+                        && is_cell_empty(x, y + 2);
+                } break;
+                case BlockRotation_LEFT: {
+                    return is_cell_empty(x, y)
+                        && is_cell_empty(x, y + 1)
+                        && is_cell_empty(x + 1, y + 1)
+                        && is_cell_empty(x + 2, y + 1);
+                } break;
+            }
+        } break;
+        default: {
+            return true;
+        } break;
+    }
+    return false;
 }
 
 bool is_move_allowed(BlockType blockType, BlockRotation rotation, Vector2 position, Vector2 move) {
@@ -862,7 +1022,7 @@ void game_step() {
                 level.gameState = GameState_GAME;
                 level.tickTime = gameTime;
                 level.speed = 1.0f;
-                //setup next block so in next_block() 
+                //setup next block so in next_block()
     level.nextBlockType = (BlockType)GetRandomValue(BlockType_NONE+1, BlockType_LB);
                 next_block();
             }
@@ -878,26 +1038,18 @@ void game_step() {
                 level.gameState = GameState_MENU;
             }
             if (IsKeyPressed(KEY_W)) {
-                //TODO: check if fits after rotate
-                level.blockRotation = (level.blockRotation - 1) < 0 ? BlockRotation_LEFT : level.blockRotation - 1;
-                switch(level.blockRotation) {
-                    case BlockRotation_UP: {
-                        TraceLog(LOG_INFO, "UP");
-                    } break;
-                    case BlockRotation_RIGHT: {
-                        TraceLog(LOG_INFO, "RIGHT");
-                    } break;
-                    case BlockRotation_DOWN: {
-                        TraceLog(LOG_INFO, "DOWN");
-                    } break;
-                    case BlockRotation_LEFT: {
-                        TraceLog(LOG_INFO, "LEFT");
-                    } break;
-                }
+                BlockRotation nextRotation = (level.blockRotation - 1) < 0 ? BlockRotation_LEFT : level.blockRotation - 1;
+                Vector2 nextPosition = level.blockPosition;
+                int extreme = current_block_max_right(level.blockType, nextRotation);
+                if (nextPosition.x >= extreme) nextPosition.x = extreme - 1;
+                if (nextPosition.x < 0) nextPosition.x = 0;
 
-                int extreme = current_block_max_right(level.blockType, level.blockRotation);
-                if (level.blockPosition.x >= extreme) level.blockPosition.x = extreme - 1;
-                if (level.blockPosition.x < 0) level.blockPosition.x = 0;
+                if (can_place_block(level.blockType, nextRotation, nextPosition)) {
+                    level.blockRotation = nextRotation;
+                    level.blockPosition = nextPosition;
+                    level.blockFromPosition = nextPosition;
+                    log_rotation(level.blockRotation);
+                }
             }
             if (IsKeyPressed(KEY_A) || IsKeyPressedRepeat(KEY_A)) {
                 if (is_move_allowed(level.blockType, level.blockRotation, level.blockPosition, (CLITERAL(Vector2){-1, 0}))) {
